@@ -1,0 +1,410 @@
+lwp@lwp-ThinkPad-E15-Gen-2:~/Escritorio/salehub$ composer init
+
+
+SaleHub/
+│
+├── src/
+│   └── SaleHub/                          # Namespace principal del proyecto
+│       ├── Domain/                       # Capa de dominio (lógica de negocio pura)
+│       │   ├── Entity/                   # Entidades del dominio (ej. User.php, Order.php)
+│       │   ├── IRepository/              # Interfaces de repositorios (ej. IUserRepository.php)
+│       │   ├── IService/                 # Interfaces de servicios de dominio (ej. IPaymentService.php)
+│       │   └── ValueObject/              # Objetos de valor (ej. Money.php, Tax.php)
+│       │
+│       ├── Application/                  # Capa de aplicación (casos de uso)
+│       │   ├── UseCase/                  # Casos de uso (ej. CreateOrderUseCase.php)
+│       │   ├── Service/                  # Servicios de aplicación (ej. OrderService.php)
+│       │   └── DTO/                      # Data Transfer Objects (ej. OrderDTO.php)
+│       │
+│       └── Infrastructure/               # Capa de infraestructura (implementaciones técnicas)
+│           ├── Persistence/              # Implementación de repositorios (ej. UserRepository.php)
+│           ├── ApiClients/               # Clientes externos (APIs)
+│           ├── ServiceImplementations/  # Implementaciones concretas de servicios de dominio
+│           └── Framework/                # Infraestructura del framework y web
+│               ├── Controller/           # Controladores HTTP (ej. OrderController.php)
+│               ├── Middleware/           # Middlewares (AuthMiddleware.php, CorsMiddleware.php)
+│               ├── Router.php            # Ruteo y manejo de rutas
+│               ├── Adapters/             # Adaptadores específicos (ej. para UI o API externa)
+│               └── Factories/            # Fábricas para crear objetos complejos o servicios
+│
+├── config/                              # Configuraciones generales
+│   ├── database.php                     # Configuración BD
+│   ├── api.php                          # Configuración API
+│   └── tenants.php                      # Multi-tenant config
+│
+├── public/                              # Carpeta pública (DocumentRoot)
+│   └── index.php                        # Punto de entrada HTTP
+│
+├── tests/                              # Pruebas unitarias y funcionales
+│   ├── Domain/
+│   ├── Application/
+│   └── Infrastructure/
+│
+└── vendor/                             # Dependencias externas (Composer)
+
+
+////////////////////////////////////////////////
+
+/src
+├── Domain
+│   ├── Entity
+│   │    ├── User.php
+│   │    └── Favorite.php
+│   ├── RepositoryInterface
+│   │    ├── UserRepositoryInterface.php
+│   │    └── FavoriteRepositoryInterface.php
+│   └── ServiceInterface
+│        └── AuthServiceInterface.php
+│
+├── Application
+│   ├── UseCase
+│   │    └── CreateUserWithFavoritesUseCase.php
+│   └── Service
+│        └── AuthService.php
+│
+├── Infrastructure
+│   ├── Persistence
+│   │    ├── UserRepository.php
+│   │    └── FavoriteRepository.php
+│   ├── ServiceImplementations
+│   │    └── AuthServiceImpl.php
+│   └── Framework
+│        ├── Controller
+│        │    └── UserController.php
+│        └── Middleware
+│             └── TenantAndAuthMiddleware.php
+│
+/public
+└── index.php
+
+///////////////////////////////////////////////////
+
+2. Middleware para detectar tenant y validar token
+php
+// src/Infrastructure/Framework/Middleware/TenantAndAuthMiddleware.php
+class TenantAndAuthMiddleware {
+    private AuthServiceInterface $authService;
+
+    public function __construct(AuthServiceInterface $authService) {
+        $this->authService = $authService;
+    }
+
+    public function handle(array $headers): string {
+        if (!isset($headers['X-Tenant'])) {
+            throw new Exception('Tenant header missing', 400);
+        }
+        $tenant = $headers['X-Tenant'];
+
+        if (!isset($headers['Authorization'])) {
+            throw new Exception('Authorization header missing', 401);
+        }
+        $token = str_replace('Bearer ', '', $headers['Authorization']);
+
+        if (!$this->authService->validateToken($token, $tenant)) {
+            throw new Exception('Invalid token', 403);
+        }
+
+        return $tenant;
+    }
+}
+3. Entidades de dominio
+php
+// src/Domain/Entity/User.php
+class User {
+    private string $id;
+    private string $name;
+    private string $email;
+    private array $favorites; // Array de Favorite
+
+    public function __construct(string $id, string $name, string $email, array $favorites = []) {
+        $this->id = $id;
+        $this->name = $name;
+        $this->email = $email;
+        $this->favorites = $favorites;
+    }
+
+    public function getId(): string { return $this->id; }
+    public function getName(): string { return $this->name; }
+    public function getEmail(): string { return $this->email; }
+    public function getFavorites(): array { return $this->favorites; }
+}
+php
+// src/Domain/Entity/Favorite.php
+class Favorite {
+    private string $id;
+    private string $userId;
+    private string $item;
+
+    public function __construct(string $id, string $userId, string $item) {
+        $this->id = $id;
+        $this->userId = $userId;
+        $this->item = $item;
+    }
+
+    public function getId(): string { return $this->id; }
+    public function getUserId(): string { return $this->userId; }
+    public function getItem(): string { return $this->item; }
+}
+4. Interfaces de repositorios
+php
+// src/Domain/RepositoryInterface/UserRepositoryInterface.php
+interface UserRepositoryInterface {
+    public function save(User $user): void;
+    public function findByEmail(string $email): ?User;
+}
+php
+// src/Domain/RepositoryInterface/FavoriteRepositoryInterface.php
+interface FavoriteRepositoryInterface {
+    public function save(Favorite $favorite): void;
+    public function findByUserId(string $userId): array;
+}
+5. Servicio de autenticación (interfaz y implementación)
+php
+// src/Domain/ServiceInterface/AuthServiceInterface.php
+interface AuthServiceInterface {
+    public function validateToken(string $token, string $tenant): bool;
+}
+php
+// src/Infrastructure/ServiceImplementations/AuthServiceImpl.php
+class AuthServiceImpl implements AuthServiceInterface {
+    public function validateToken(string $token, string $tenant): bool {
+        // Aquí implementas la validación real del token, por ejemplo JWT, consulta a auth server, etc.
+        // Para ejemplo simple, validamos token fijo
+        return $token === 'valid-token-for-' . $tenant;
+    }
+}
+6. Repositorios concretos (simplificados)
+php
+// src/Infrastructure/Persistence/UserRepository.php
+class UserRepository implements UserRepositoryInterface {
+    private \PDO $connection;
+
+    public function __construct(\PDO $connection) {
+        $this->connection = $connection;
+    }
+
+    public function save(User $user): void {
+        $stmt = $this->connection->prepare("INSERT INTO users (id, name, email) VALUES (?, ?, ?)");
+        $stmt->execute([$user->getId(), $user->getName(), $user->getEmail()]);
+    }
+
+    public function findByEmail(string $email): ?User {
+        $stmt = $this->connection->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $row = $stmt->fetch();
+        if (!$row) return null;
+        return new User($row['id'], $row['name'], $row['email']);
+    }
+}
+php
+// src/Infrastructure/Persistence/FavoriteRepository.php
+class FavoriteRepository implements FavoriteRepositoryInterface {
+    private \PDO $connection;
+
+    public function __construct(\PDO $connection) {
+        $this->connection = $connection;
+    }
+
+    public function save(Favorite $favorite): void {
+        $stmt = $this->connection->prepare("INSERT INTO favorites (id, user_id, item) VALUES (?, ?, ?)");
+        $stmt->execute([$favorite->getId(), $favorite->getUserId(), $favorite->getItem()]);
+    }
+
+    public function findByUserId(string $userId): array {
+        $stmt = $this->connection->prepare("SELECT * FROM favorites WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $rows = $stmt->fetchAll();
+        $favorites = [];
+        foreach ($rows as $row) {
+            $favorites[] = new Favorite($row['id'], $row['user_id'], $row['item']);
+        }
+        return $favorites;
+    }
+}
+7. Caso de uso: Crear usuario con favoritos
+php
+// src/Application/UseCase/CreateUserWithFavoritesUseCase.php
+class CreateUserWithFavoritesUseCase {
+    private UserRepositoryInterface $userRepository;
+    private FavoriteRepositoryInterface $favoriteRepository;
+
+    public function __construct(
+        UserRepositoryInterface $userRepository,
+        FavoriteRepositoryInterface $favoriteRepository
+    ) {
+        $this->userRepository = $userRepository;
+        $this->favoriteRepository = $favoriteRepository;
+    }
+
+    public function execute(array $userData, array $favoritesData): User {
+        // Validar datos, generar ID, etc.
+        $userId = uniqid('user_');
+        $user = new User($userId, $userData['name'], $userData['email']);
+
+        $this->userRepository->save($user);
+
+        foreach ($favoritesData as $fav) {
+            $favorite = new Favorite(uniqid('fav_'), $userId, $fav['item']);
+            $this->favoriteRepository->save($favorite);
+        }
+
+        return $user;
+    }
+}
+8. Controlador para manejar la petición POST
+php
+// src/Infrastructure/Framework/Controller/UserController.php
+class UserController {
+    private CreateUserWithFavoritesUseCase $createUserUseCase;
+    private TenantAndAuthMiddleware $middleware;
+
+    public function __construct(
+        CreateUserWithFavoritesUseCase $createUserUseCase,
+        TenantAndAuthMiddleware $middleware
+    ) {
+        $this->createUserUseCase = $createUserUseCase;
+        $this->middleware = $middleware;
+    }
+
+    public function create(array $headers, string $rawBody) {
+        try {
+            // Validar tenant y token
+            $tenant = $this->middleware->handle($headers);
+
+            // Parsear JSON body
+            $data = json_decode($rawBody, true);
+            if (!$data || !isset($data['user']) || !isset($data['favorites'])) {
+                throw new Exception('Invalid payload', 400);
+            }
+
+            $user = $this->createUserUseCase->execute($data['user'], $data['favorites']);
+
+            // Respuesta exitosa
+            http_response_code(201);
+            echo json_encode([
+                'status' => 'success',
+                'userId' => $user->getId()
+            ]);
+        } catch (Exception $e) {
+            http_response_code($e->getCode() ?: 500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+}
+9. Punto de entrada y ruteo mínimo
+php
+// public/index.php
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// Simulación simple de router
+$method = $_SERVER['REQUEST_METHOD'];
+$uri = $_SERVER['REQUEST_URI'];
+
+if ($method === 'POST' && $uri === '/users') {
+    // Crear conexión PDO según tenant (ejemplo simplificado)
+    $headers = getallheaders();
+    $tenant = $headers['X-Tenant'] ?? null;
+    if (!$tenant) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Tenant header missing']);
+        exit;
+    }
+
+    // Aquí carga configuración DB según tenant
+    $pdo = new PDO("mysql:host=localhost;dbname={$tenant}_db", "user", "pass");
+
+    // Instanciar repositorios e inyectar dependencias
+    $userRepo = new UserRepository($pdo);
+    $favRepo = new FavoriteRepository($pdo);
+    $authService = new AuthServiceImpl();
+
+    $middleware = new TenantAndAuthMiddleware($authService);
+    $useCase = new CreateUserWithFavoritesUseCase($userRepo, $favRepo);
+    $controller = new UserController($useCase, $middleware);
+
+    $rawBody = file_get_contents('php://input');
+    $controller->create($headers, $rawBody);
+} else {
+    http_response_code(404);
+    echo json_encode(['status' => 'error', 'message' => 'Not found']);
+}
+10. Ejemplo de petición desde cliente (JavaScript)
+js
+const payload = {
+    user: {
+        name: "Juan Pérez",
+        email: "juan@example.com"
+    },
+    favorites: [
+        { item: "Football" },
+        { item: "Basketball" }
+    ]
+};
+
+const requestUrl = "https://tu-backend.com/users/save.php";
+
+const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "X-Tenant": "sport",
+    "Authorization": "Bearer valid-token-for-sport"
+});
+
+fetch(requestUrl, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(payload)
+})
+.then(res => res.json())
+.then(console.log)
+.catch(console.error);
+Resumen
+El middleware valida el tenant y token.
+
+Se usa PDO para conectar a la base de datos específica del tenant.
+
+El caso de uso crea el usuario y guarda sus favoritos.
+
+Las entidades y repositorios están bien separados según Clean Architecture.
+
+El controlador maneja la petición y responde en JSON.
+
+
+//////////////////////////////////////
+
+Diagrama UML de Secuencia: Guardar Usuario y Favoritos con Tenant y Token
+text
+sequenceDiagram
+    participant Cliente
+    participant IndexPHP as public/index.php
+    participant Middleware as TenantAndAuthMiddleware
+    participant Controller as UserController
+    participant UseCase as CreateUserWithFavoritesUseCase
+    participant UserRepo as UserRepository
+    participant FavRepo as FavoriteRepository
+    participant DB as BaseDeDatos
+
+    Cliente->>IndexPHP: POST /users con X-Tenant y Authorization
+    IndexPHP->>Middleware: handle(headers)
+    Middleware-->>IndexPHP: tenant válido o error
+    IndexPHP->>Controller: create(headers, body)
+    Controller->>Middleware: handle(headers)
+    Middleware-->>Controller: tenant válido
+    Controller->>UseCase: execute(userData, favoritesData)
+    UseCase->>UserRepo: save(User)
+    UserRepo->>DB: INSERT INTO users (...)
+    DB-->>UserRepo: OK
+    UserRepo-->>UseCase: éxito
+    UseCase->>FavRepo: save(Favorite) [por cada favorito]
+    FavRepo->>DB: INSERT INTO favorites (...)
+    DB-->>FavRepo: OK
+    FavRepo-->>UseCase: éxito
+    UseCase-->>Controller: User creado
+    Controller-->>Cliente: JSON {status: success, userId}
+
+
+
+
+    https://mermaid.live/edit#pako:eNqVVN1u2jAYfRXLV1SCNHRQiC8qFdg0Nq2gwrRpyy7c-CuxFuzMdhgU8TC73HP0xWbnh5QfbRo3xPb5zjk-35dscSQZYII1_MhARDDidKHoMhTI_lKqDI94SoVBw4SDMHB6MBYM1tO3U0Q1SrOHhEeX3G15aZyeoj9wxhL4SRU4_ByE3bwV7DYzcX10Rl0Ko2SSgHJlHzWoeucUbc-HVOcKQwXUgCv4xE38hq6k4gZ0iThbqu4hlZWMe9bcSLU5xVq2CloR_w0-GjjkwMqOYESN1KEoQGW0rZubKkuCppPZHF1m1oFGkRToc6vICm2Qy8qKPVHDZclQ1VmKOkWCYirscyMGyizPRYGtAa0DRVPwr55_JZxJJBEoJdUJf507QVEebsXfRA-SbUqVGvb_nl5KHLo6w112kiBYQ5RZNy4zGy9toseq225ZKpXwojDvLkGarqDhljUmP7Gg0YCg8d3s9f3c_s0nqGhIw_O8EjsatA64Ju-POF5afP69trNxbKQco9JHNUkX6GsqFYooo9VF5LeitCw4Y29_41OLe5XKYcXyL4NHDXEXyxt_phsOWswyQe9mkzu01YaaTNurZVEE2o6IC3DMdqHATbxQnGFiVAZNvAS1pG6Jt442xCaGJYSY2EdG1fcQh2Jna-yb9EXKZVWmZLaIMXmkibarLGV2HstP2B4Cdnjt5yITBpNuzoDJFq8xaV9de32_2-sHgX_d8f12p4k3mAQ9z-_0XgVBcNXpt4N2sGvip1zT9_q97u4PIZ_BvA

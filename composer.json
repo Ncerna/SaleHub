@@ -1,0 +1,15 @@
+{
+    "name": "lwp/salehub",
+    "autoload": {
+        "psr-4": {
+            "Lwp\\Salehub\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "FIIS",
+            "email": "nimerce1234@gmail.com"
+        }
+    ],
+    "require": {}
+}
