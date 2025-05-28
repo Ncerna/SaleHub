@@ -1,0 +1,544 @@
+UML:
+
+@startuml
+package "SaleHub" {
+  
+  package "Domain" {
+    package "Entity" {
+      class User
+    }
+    package "IRepository" {
+      interface IUserRepository
+    }
+    package "IService" {
+      interface IUserService
+    }
+    package "ValueObject" {
+      class Email
+    }
+  }
+  
+  package "Application" {
+    package "UseCase" {
+      class RegisterUserUseCase
+      class FindUserUseCase
+    }
+    package "Service" {
+      class UserAppService
+    }
+    package "DTO" {
+      class UserDTO
+    }
+  }
+  
+  package "Infrastructure" {
+    package "Persistence" {
+      class UserRepository
+      class ConnectionPool
+    }
+    package "ApiClients" {
+      class ExternalEmailVerificationClient
+    }
+    package "ServiceImplementations" {
+      class UserService
+    }
+    package "Framework" {
+      package "Controller" {
+        class UserController
+      }
+      package "Middleware" {
+        class AuthMiddleware
+      }
+      class Router
+      package "Adapters" {
+        class JsonResponseAdapter
+      }
+      package "Factories" {
+        class ServiceFactory
+      }
+    }
+  }
+}
+@enduml
+
+
+Esample : 
+
+sequenceDiagram
+    participant Cliente
+    participant Router
+    participant AuthMiddleware
+    participant UserController
+    participant RegisterUserUseCase
+    participant UserAppService
+    participant UserRepository
+    participant ConnectionPool
+    participant BaseDeDatos
+
+    Cliente->>Router: POST /register
+    Router->>AuthMiddleware: handle()
+    AuthMiddleware-->>Router: auth ok
+    Router->>UserController: register($data)
+    UserController->>RegisterUserUseCase: execute($data)
+    RegisterUserUseCase->>UserAppService: registerUser($data)
+    UserAppService->>UserRepository: create(user)
+    UserRepository->>ConnectionPool: getConnection(tenant)
+    ConnectionPool->>BaseDeDatos: conectar
+    BaseDeDatos-->>ConnectionPool: conexión establecida
+    ConnectionPool-->>UserRepository: conexión
+    UserRepository->>BaseDeDatos: INSERT user
+    BaseDeDatos-->>UserRepository: resultado
+    UserRepository-->>UserAppService: resultado
+    UserAppService-->>RegisterUserUseCase: resultado
+    RegisterUserUseCase-->>UserController: resultado
+    UserController-->>Router: respuesta éxito
+    Router-->>Cliente: HTTP 200 OK
+
+    graph TD
+    Cliente --> Router
+    Router --> Middleware
+    Middleware --> Controlador
+    Controlador --> Aplicacion
+    Aplicacion --> Dominio
+    Dominio --> Infraestructura
+    Infraestructura --> BaseDeDatos
+
+
+////////////////////////////
+2. Código por capas
+2.1 Domain
+Entity/User.php
+php
+<?php
+namespace SaleHub\Domain\Entity;
+
+use SaleHub\Domain\ValueObject\Email;
+
+class User {
+    private string $id;
+    private string $name;
+    private Email $email;
+
+    public function __construct(string $id, string $name, Email $email) {
+        $this->id = $id;
+        $this->name = trim($name);
+        $this->email = $email;
+    }
+
+    public function getId(): string {
+        return $this->id;
+    }
+    public function getName(): string {
+        return $this->name;
+    }
+    public function getEmail(): Email {
+        return $this->email;
+    }
+}
+ValueObject/Email.php
+php
+<?php
+namespace SaleHub\Domain\ValueObject;
+
+use InvalidArgumentException;
+
+class Email {
+    private string $email;
+
+    public function __construct(string $email) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidArgumentException("Email inválido: {$email}");
+        }
+        $this->email = strtolower(trim($email));
+    }
+
+    public function __toString(): string {
+        return $this->email;
+    }
+}
+IRepository/IUserRepository.php
+php
+<?php
+namespace SaleHub\Domain\IRepository;
+
+use SaleHub\Domain\Entity\User;
+
+interface IUserRepository {
+    public function create(User $user): bool;
+    public function findByEmail(string $email): ?User;
+}
+IService/IUserService.php
+php
+<?php
+namespace SaleHub\Domain\IService;
+
+use SaleHub\Domain\Entity\User;
+
+interface IUserService {
+    public function validateUser(User $user): bool;
+}
+2.2 Application
+DTO/UserDTO.php
+php
+<?php
+namespace SaleHub\Application\DTO;
+
+class UserDTO {
+    public string $id;
+    public string $name;
+    public string $email;
+
+    public function __construct(string $id, string $name, string $email) {
+        $this->id = $id;
+        $this->name = $name;
+        $this->email = $email;
+    }
+}
+Service/UserAppService.php
+php
+<?php
+namespace SaleHub\Application\Service;
+
+use SaleHub\Domain\IRepository\IUserRepository;
+use SaleHub\Domain\Entity\User;
+use SaleHub\Domain\ValueObject\Email;
+
+class UserAppService {
+    private IUserRepository $userRepository;
+
+    public function __construct(IUserRepository $userRepository) {
+        $this->userRepository = $userRepository;
+    }
+
+    public function registerUser(string $id, string $name, string $email): void {
+        $user = new User($id, $name, new Email($email));
+        $this->userRepository->create($user);
+    }
+
+    public function findUserByEmail(string $email): ?User {
+        return $this->userRepository->findByEmail($email);
+    }
+}
+UseCase/RegisterUserUseCase.php
+php
+<?php
+namespace SaleHub\Application\UseCase;
+
+use SaleHub\Application\Service\UserAppService;
+use SaleHub\Domain\ValueObject\Email;
+use Exception;
+
+class RegisterUserUseCase {
+    private UserAppService $userAppService;
+
+    public function __construct(UserAppService $userAppService) {
+        $this->userAppService = $userAppService;
+    }
+
+    public function execute(string $id, string $name, string $email): void {
+        $existingUser = $this->userAppService->findUserByEmail($email);
+        if ($existingUser !== null) {
+            throw new Exception("El usuario con email {$email} ya existe.");
+        }
+        $this->userAppService->registerUser($id, $name, $email);
+    }
+}
+UseCase/FindUserUseCase.php
+php
+<?php
+namespace SaleHub\Application\UseCase;
+
+use SaleHub\Application\Service\UserAppService;
+use SaleHub\Domain\Entity\User;
+
+class FindUserUseCase {
+    private UserAppService $userAppService;
+
+    public function __construct(UserAppService $userAppService) {
+        $this->userAppService = $userAppService;
+    }
+
+    public function execute(string $email): ?User {
+        return $this->userAppService->findUserByEmail($email);
+    }
+}
+2.3 Infrastructure
+Persistence/UserRepository.php
+php
+<?php
+namespace SaleHub\Infrastructure\Persistence;
+
+use SaleHub\Domain\IRepository\IUserRepository;
+use SaleHub\Domain\Entity\User;
+use SaleHub\Domain\ValueObject\Email;
+use ConnectionPool;
+use Exception;
+
+class UserRepository implements IUserRepository {
+    private $connection;
+
+    public function __construct(string $tenantIdentifier) {
+        $connObj = ConnectionPool::getConnection($tenantIdentifier);
+        $this->connection = $connObj->conexion;
+    }
+
+    public function create(User $user): bool {
+        $stmt = $this->connection->prepare("INSERT INTO users (id, name, email) VALUES (?, ?, ?)");
+        if (!$stmt) {
+            throw new Exception("Error preparando la consulta: " . $this->connection->error);
+        }
+
+        $id = $user->getId();
+        $name = $user->getName();
+        $email = (string)$user->getEmail();
+
+        $stmt->bind_param("sss", $id, $name, $email);
+
+        $result = $stmt->execute();
+        $stmt->close();
+
+        return $result;
+    }
+
+    public function findByEmail(string $email): ?User {
+        $stmt = $this->connection->prepare("SELECT id, name, email FROM users WHERE email = ?");
+        if (!$stmt) {
+            throw new Exception("Error preparando la consulta: " . $this->connection->error);
+        }
+
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $userData = $result->fetch_assoc();
+        $stmt->close();
+
+        if ($userData) {
+            return new User($userData['id'], $userData['name'], new Email($userData['email']));
+        }
+
+        return null;
+    }
+}
+ApiClients/ExternalEmailVerificationClient.php (simulado)
+php
+<?php
+namespace SaleHub\Infrastructure\ApiClients;
+
+class ExternalEmailVerificationClient {
+    public function verifyEmail(string $email): bool {
+        // Simula llamada a API externa para verificar email
+        // Aquí siempre devuelve true para el ejemplo
+        return true;
+    }
+}
+ServiceImplementations/UserService.php
+php
+<?php
+namespace SaleHub\Infrastructure\ServiceImplementations;
+
+use SaleHub\Domain\Entity\User;
+use SaleHub\Domain\IService\IUserService;
+use SaleHub\Infrastructure\ApiClients\ExternalEmailVerificationClient;
+
+class UserService implements IUserService {
+    private ExternalEmailVerificationClient $emailClient;
+
+    public function __construct(ExternalEmailVerificationClient $emailClient) {
+        $this->emailClient = $emailClient;
+    }
+
+    public function validateUser(User $user): bool {
+        // Validación simple: verifica email con cliente externo
+        return $this->emailClient->verifyEmail((string)$user->getEmail());
+    }
+}
+Framework/Controller/UserController.php
+php
+<?php
+namespace SaleHub\Infrastructure\Framework\Controller;
+
+use SaleHub\Application\UseCase\RegisterUserUseCase;
+use SaleHub\Application\UseCase\FindUserUseCase;
+use SaleHub\Infrastructure\Persistence\UserRepository;
+use SaleHub\Infrastructure\ApiClients\ExternalEmailVerificationClient;
+use SaleHub\Infrastructure\ServiceImplementations\UserService;
+use SaleHub\Application\Service\UserAppService;
+use SaleHub\Infrastructure\Framework\Adapters\JsonResponseAdapter;
+
+class UserController {
+    private RegisterUserUseCase $registerUserUseCase;
+    private FindUserUseCase $findUserUseCase;
+    private JsonResponseAdapter $responseAdapter;
+
+    public function __construct(string $tenantIdentifier) {
+        $userRepository = new UserRepository($tenantIdentifier);
+        $emailClient = new ExternalEmailVerificationClient();
+        $userService = new UserService($emailClient);
+        $userAppService = new UserAppService($userRepository);
+
+        // Aquí podrías inyectar userService en userAppService si se requiere validación
+
+        $this->registerUserUseCase = new RegisterUserUseCase($userAppService);
+        $this->findUserUseCase = new FindUserUseCase($userAppService);
+        $this->responseAdapter = new JsonResponseAdapter();
+    }
+
+    public function register(array $requestData): void {
+        try {
+            if (empty($requestData['id']) || empty($requestData['name']) || empty($requestData['email'])) {
+                throw new \Exception("Datos incompletos para registro.");
+            }
+
+            $this->registerUserUseCase->execute($requestData['id'], $requestData['name'], $requestData['email']);
+
+            $this->responseAdapter->sendSuccess("Usuario registrado correctamente.");
+        } catch (\Exception $e) {
+            $this->responseAdapter->sendError($e->getMessage());
+        }
+    }
+
+    public function find(string $email): void {
+        try {
+            $user = $this->findUserUseCase->execute($email);
+            if ($user === null) {
+                $this->responseAdapter->sendError("Usuario no encontrado.");
+                return;
+            }
+
+            $this->responseAdapter->sendData([
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'email' => (string)$user->getEmail()
+            ]);
+        } catch (\Exception $e) {
+            $this->responseAdapter->sendError($e->getMessage());
+        }
+    }
+}
+Framework/Middleware/AuthMiddleware.php (ejemplo simple)
+php
+<?php
+namespace SaleHub\Infrastructure\Framework\Middleware;
+
+class AuthMiddleware {
+    public function handle(callable $next): void {
+        // Ejemplo simple: verificar token en headers
+        $headers = getallheaders();
+        if (!isset($headers['Authorization']) || $headers['Authorization'] !== 'Bearer valid_token') {
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'No autorizado']);
+            exit;
+        }
+        $next();
+    }
+}
+Framework/Adapters/JsonResponseAdapter.php
+php
+<?php
+namespace SaleHub\Infrastructure\Framework\Adapters;
+
+class JsonResponseAdapter {
+    public function sendSuccess(string $message): void {
+        http_response_code(200);
+        echo json_encode(['status' => 'success', 'message' => $message]);
+    }
+
+    public function sendError(string $message): void {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => $message]);
+    }
+
+    public function sendData(array $data): void {
+        http_response_code(200);
+        echo json_encode(['status' => 'success', 'data' => $data]);
+    }
+}
+Framework/Router.php (simplificado)
+php
+<?php
+namespace SaleHub\Infrastructure\Framework;
+
+use SaleHub\Infrastructure\Framework\Controller\UserController;
+use SaleHub\Infrastructure\Framework\Middleware\AuthMiddleware;
+
+class Router {
+    private UserController $userController;
+    private AuthMiddleware $authMiddleware;
+
+    public function __construct(string $tenantIdentifier) {
+        $this->userController = new UserController($tenantIdentifier);
+        $this->authMiddleware = new AuthMiddleware();
+    }
+
+    public function handleRequest(): void {
+        $this->authMiddleware->handle(function () {
+            $uri = $_SERVER['REQUEST_URI'];
+            $method = $_SERVER['REQUEST_METHOD'];
+
+            if ($uri === '/register' && $method === 'POST') {
+                $data = json_decode(file_get_contents('php://input'), true);
+                $this->userController->register($data);
+            } elseif (preg_match('/\/user\/(.+)/', $uri, $matches) && $method === 'GET') {
+                $email = urldecode($matches[1]);
+                $this->userController->find($email);
+            } else {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'Ruta no encontrada']);
+            }
+        });
+    }
+}
+Framework/Factories/ServiceFactory.php (ejemplo para crear servicios)
+php
+<?php
+namespace SaleHub\Infrastructure\Framework\Factories;
+
+use SaleHub\Infrastructure\Persistence\UserRepository;
+use SaleHub\Infrastructure\ApiClients\ExternalEmailVerificationClient;
+use SaleHub\Infrastructure\ServiceImplementations\UserService;
+use SaleHub\Application\Service\UserAppService;
+
+class ServiceFactory {
+    public static function createUserAppService(string $tenantIdentifier): UserAppService {
+        $userRepository = new UserRepository($tenantIdentifier);
+        $emailClient = new ExternalEmailVerificationClient();
+        $userService = new UserService($emailClient);
+        // Aquí podrías pasar userService a UserAppService si se extiende para validación
+        return new UserAppService($userRepository);
+    }
+}
+3. Configuración
+config/database.php
+php
+<?php
+return [
+    'host' => 'localhost',
+    'user' => 'root',
+    'password' => 'oracle',
+];
+config/api.php
+php
+<?php
+return [
+    'externalEmailVerificationApiKey' => 'your_api_key_here',
+];
+config/tenants.php
+php
+<?php
+return [
+    'tenant1' => 'tenant1_db',
+    'tenant2' => 'tenant2_db',
+];
+4. Public/index.php
+php
+<?php
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use SaleHub\Infrastructure\Framework\Router;
+
+// Simulación: obtener tenant del header o subdominio
+$tenantIdentifier = $_SERVER['HTTP_X_TENANT'] ?? 'tenant1_db';
+
+$router = new Router($tenantIdentifier);
+$router->handleRequest();

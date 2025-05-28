@@ -46,39 +46,58 @@ SaleHub/
 └── vendor/                             # Dependencias externas (Composer)
 
 
-////////////////////////////////////////////////
+///////////////////Ejemplo/////////////////////////////
+SaleHub/
+│
+├── src/
+│   └── SaleHub/
+│       ├── Domain/
+│       │   ├── Entity/
+│       │   │   └── User.php
+│       │   ├── IRepository/
+│       │   │   └── IUserRepository.php
+│       │   ├── IService/
+│       │   │   └── IUserService.php
+│       │   └── ValueObject/
+│       │       └── Email.php
+│       │
+│       ├── Application/
+│       │   ├── UseCase/
+│       │   │   ├── RegisterUserUseCase.php
+│       │   │   └── FindUserUseCase.php
+│       │   ├── Service/
+│       │   │   └── UserAppService.php
+│       │   └── DTO/
+│       │       └── UserDTO.php
+│       │
+│       └── Infrastructure/
+│           ├── Persistence/
+│           │   └── UserRepository.php
+│           ├── ApiClients/
+│           │   └── ExternalEmailVerificationClient.php
+│           ├── ServiceImplementations/
+│           │   └── UserService.php
+│           └── Framework/
+│               ├── Controller/
+│               │   └── UserController.php
+│               ├── Middleware/
+│               │   └── AuthMiddleware.php
+│               ├── Router.php
+│               ├── Adapters/
+│               │   └── JsonResponseAdapter.php
+│               └── Factories/
+│                   └── ServiceFactory.php
+│
+├── config/
+│   ├── database.php
+│   ├── api.php
+│   └── tenants.php
+│
+├── public/
+│   └── index.php
+│
+└── vendor/
 
-/src
-├── Domain
-│   ├── Entity
-│   │    ├── User.php
-│   │    └── Favorite.php
-│   ├── RepositoryInterface
-│   │    ├── UserRepositoryInterface.php
-│   │    └── FavoriteRepositoryInterface.php
-│   └── ServiceInterface
-│        └── AuthServiceInterface.php
-│
-├── Application
-│   ├── UseCase
-│   │    └── CreateUserWithFavoritesUseCase.php
-│   └── Service
-│        └── AuthService.php
-│
-├── Infrastructure
-│   ├── Persistence
-│   │    ├── UserRepository.php
-│   │    └── FavoriteRepository.php
-│   ├── ServiceImplementations
-│   │    └── AuthServiceImpl.php
-│   └── Framework
-│        ├── Controller
-│        │    └── UserController.php
-│        └── Middleware
-│             └── TenantAndAuthMiddleware.php
-│
-/public
-└── index.php
 
 ///////////////////////////////////////////////////
 
