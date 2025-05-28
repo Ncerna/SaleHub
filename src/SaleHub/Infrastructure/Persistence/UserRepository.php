@@ -4,15 +4,16 @@ namespace SaleHub\Infrastructure\Persistence;
 use SaleHub\Domain\IRepository\IUserRepository;
 use SaleHub\Domain\Entity\User;
 use SaleHub\Domain\ValueObject\Email;
-use SaleHub\Infrastructure\ConnectionPool\ConnectionPool; 
+use SaleHub\Infrastructure\ConnectionPool\CustomConnectionPool;
+ 
 use Exception;
 
 class UserRepository implements IUserRepository {
     private $connection;
 
     public function __construct(string $tenantIdentifier) {
-        $connObj = ConnectionPool::getConnection($tenantIdentifier);
-        $this->connection = $connObj->conexion;
+        $connObj = CustomConnectionPool::getConnection($tenantIdentifier);
+        $this->connection = $connObj;
     }
 
     public function create(User $user): bool {

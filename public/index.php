@@ -16,12 +16,16 @@ $router->addRoute('GET', '/invoices', [new InvoiceController(), 'listInvoices'])
 $router->dispatch();
 */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+
+require __DIR__ . '/../vendor/autoload.php';
+
+
+var_dump(class_exists('SaleHub\Infrastructure\ConnectionPool\CustomConnectionPool'));
 
 use SaleHub\Infrastructure\Framework\Router;
 
 // Simulación: obtener tenant del header o subdominio
-$tenantIdentifier = $_SERVER['HTTP_X_TENANT'] ?? 'tenant1_db';
+$tenantIdentifier = $_SERVER['HTTP_X_TENANT'] ?? 'sports';
 
 $router = new Router($tenantIdentifier);
 $router->handleRequest();

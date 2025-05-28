@@ -1,8 +1,8 @@
 {
-    "name": "lwp/salehub",
+    "name": "cerna/salehub",
     "autoload": {
         "psr-4": {
-            "Lwp\\Salehub\\": "src/"
+             "SaleHub\\": "src/SaleHub/"
         }
     },
     "authors": [

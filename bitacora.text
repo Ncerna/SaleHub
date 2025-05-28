@@ -1,4 +1,7 @@
 lwp@lwp-ThinkPad-E15-Gen-2:~/Escritorio/salehub$ composer init
+composer clear-cache
+composer dump-autoload
+
 
 
 SaleHub/

@@ -1,7 +1,7 @@
 <?php
 namespace SaleHub\Infrastructure\Framework\Middleware;
 
-class AuthMiddleware
+class AuthMiddleware0
 {
     public function validateToken(?string $token): bool
     {

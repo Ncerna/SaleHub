@@ -6,5 +6,5 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Lwp\\Salehub\\' => array($baseDir . '/src'),
+    'SaleHub\\' => array($baseDir . '/src/SaleHub'),
 );

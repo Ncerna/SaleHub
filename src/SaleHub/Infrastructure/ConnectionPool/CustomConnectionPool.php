@@ -3,7 +3,7 @@ namespace SaleHub\Infrastructure\ConnectionPool;
 
 use Exception;
 
-class ConnectionPool {
+class CustomConnectionPool  {
     private static array $instances = []; // Conexiones por tenant
     private static int $ttl = 600; // Tiempo de vida en segundos (10 minutos)
 
