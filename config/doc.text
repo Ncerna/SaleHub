@@ -1,7 +1,7 @@
 UML:
 
 @startuml
-package "SaleHub" {
+package "App" {
   
   package "Domain" {
     package "Entity" {
@@ -110,9 +110,9 @@ sequenceDiagram
 Entity/User.php
 php
 <?php
-namespace SaleHub\Domain\Entity;
+namespace App\Domain\Entity;
 
-use SaleHub\Domain\ValueObject\Email;
+use App\Domain\ValueObject\Email;
 
 class User {
     private string $id;
@@ -138,7 +138,7 @@ class User {
 ValueObject/Email.php
 php
 <?php
-namespace SaleHub\Domain\ValueObject;
+namespace App\Domain\ValueObject;
 
 use InvalidArgumentException;
 
@@ -159,9 +159,9 @@ class Email {
 IRepository/IUserRepository.php
 php
 <?php
-namespace SaleHub\Domain\IRepository;
+namespace App\Domain\IRepository;
 
-use SaleHub\Domain\Entity\User;
+use App\Domain\Entity\User;
 
 interface IUserRepository {
     public function create(User $user): bool;
@@ -170,9 +170,9 @@ interface IUserRepository {
 IService/IUserService.php
 php
 <?php
-namespace SaleHub\Domain\IService;
+namespace App\Domain\IService;
 
-use SaleHub\Domain\Entity\User;
+use App\Domain\Entity\User;
 
 interface IUserService {
     public function validateUser(User $user): bool;
@@ -181,7 +181,7 @@ interface IUserService {
 DTO/UserDTO.php
 php
 <?php
-namespace SaleHub\Application\DTO;
+namespace App\Application\DTO;
 
 class UserDTO {
     public string $id;
@@ -197,11 +197,11 @@ class UserDTO {
 Service/UserAppService.php
 php
 <?php
-namespace SaleHub\Application\Service;
+namespace App\Application\Service;
 
-use SaleHub\Domain\IRepository\IUserRepository;
-use SaleHub\Domain\Entity\User;
-use SaleHub\Domain\ValueObject\Email;
+use App\Domain\IRepository\IUserRepository;
+use App\Domain\Entity\User;
+use App\Domain\ValueObject\Email;
 
 class UserAppService {
     private IUserRepository $userRepository;
@@ -222,10 +222,10 @@ class UserAppService {
 UseCase/RegisterUserUseCase.php
 php
 <?php
-namespace SaleHub\Application\UseCase;
+namespace App\Application\UseCase;
 
-use SaleHub\Application\Service\UserAppService;
-use SaleHub\Domain\ValueObject\Email;
+use App\Application\Service\UserAppService;
+use App\Domain\ValueObject\Email;
 use Exception;
 
 class RegisterUserUseCase {
@@ -246,10 +246,10 @@ class RegisterUserUseCase {
 UseCase/FindUserUseCase.php
 php
 <?php
-namespace SaleHub\Application\UseCase;
+namespace App\Application\UseCase;
 
-use SaleHub\Application\Service\UserAppService;
-use SaleHub\Domain\Entity\User;
+use App\Application\Service\UserAppService;
+use App\Domain\Entity\User;
 
 class FindUserUseCase {
     private UserAppService $userAppService;
@@ -266,11 +266,11 @@ class FindUserUseCase {
 Persistence/UserRepository.php
 php
 <?php
-namespace SaleHub\Infrastructure\Persistence;
+namespace App\Infrastructure\Persistence;
 
-use SaleHub\Domain\IRepository\IUserRepository;
-use SaleHub\Domain\Entity\User;
-use SaleHub\Domain\ValueObject\Email;
+use App\Domain\IRepository\IUserRepository;
+use App\Domain\Entity\User;
+use App\Domain\ValueObject\Email;
 use ConnectionPool;
 use Exception;
 
@@ -323,7 +323,7 @@ class UserRepository implements IUserRepository {
 ApiClients/ExternalEmailVerificationClient.php (simulado)
 php
 <?php
-namespace SaleHub\Infrastructure\ApiClients;
+namespace App\Infrastructure\ApiClients;
 
 class ExternalEmailVerificationClient {
     public function verifyEmail(string $email): bool {
@@ -335,11 +335,11 @@ class ExternalEmailVerificationClient {
 ServiceImplementations/UserService.php
 php
 <?php
-namespace SaleHub\Infrastructure\ServiceImplementations;
+namespace App\Infrastructure\ServiceImplementations;
 
-use SaleHub\Domain\Entity\User;
-use SaleHub\Domain\IService\IUserService;
-use SaleHub\Infrastructure\ApiClients\ExternalEmailVerificationClient;
+use App\Domain\Entity\User;
+use App\Domain\IService\IUserService;
+use App\Infrastructure\ApiClients\ExternalEmailVerificationClient;
 
 class UserService implements IUserService {
     private ExternalEmailVerificationClient $emailClient;
@@ -356,15 +356,15 @@ class UserService implements IUserService {
 Framework/Controller/UserController.php
 php
 <?php
-namespace SaleHub\Infrastructure\Framework\Controller;
+namespace App\Infrastructure\Framework\Controller;
 
-use SaleHub\Application\UseCase\RegisterUserUseCase;
-use SaleHub\Application\UseCase\FindUserUseCase;
-use SaleHub\Infrastructure\Persistence\UserRepository;
-use SaleHub\Infrastructure\ApiClients\ExternalEmailVerificationClient;
-use SaleHub\Infrastructure\ServiceImplementations\UserService;
-use SaleHub\Application\Service\UserAppService;
-use SaleHub\Infrastructure\Framework\Adapters\JsonResponseAdapter;
+use App\Application\UseCase\RegisterUserUseCase;
+use App\Application\UseCase\FindUserUseCase;
+use App\Infrastructure\Persistence\UserRepository;
+use App\Infrastructure\ApiClients\ExternalEmailVerificationClient;
+use App\Infrastructure\ServiceImplementations\UserService;
+use App\Application\Service\UserAppService;
+use App\Infrastructure\Framework\Adapters\JsonResponseAdapter;
 
 class UserController {
     private RegisterUserUseCase $registerUserUseCase;
@@ -419,7 +419,7 @@ class UserController {
 Framework/Middleware/AuthMiddleware.php (ejemplo simple)
 php
 <?php
-namespace SaleHub\Infrastructure\Framework\Middleware;
+namespace App\Infrastructure\Framework\Middleware;
 
 class AuthMiddleware {
     public function handle(callable $next): void {
@@ -436,7 +436,7 @@ class AuthMiddleware {
 Framework/Adapters/JsonResponseAdapter.php
 php
 <?php
-namespace SaleHub\Infrastructure\Framework\Adapters;
+namespace App\Infrastructure\Framework\Adapters;
 
 class JsonResponseAdapter {
     public function sendSuccess(string $message): void {
@@ -457,10 +457,10 @@ class JsonResponseAdapter {
 Framework/Router.php (simplificado)
 php
 <?php
-namespace SaleHub\Infrastructure\Framework;
+namespace App\Infrastructure\Framework;
 
-use SaleHub\Infrastructure\Framework\Controller\UserController;
-use SaleHub\Infrastructure\Framework\Middleware\AuthMiddleware;
+use App\Infrastructure\Framework\Controller\UserController;
+use App\Infrastructure\Framework\Middleware\AuthMiddleware;
 
 class Router {
     private UserController $userController;
@@ -492,12 +492,12 @@ class Router {
 Framework/Factories/ServiceFactory.php (ejemplo para crear servicios)
 php
 <?php
-namespace SaleHub\Infrastructure\Framework\Factories;
+namespace App\Infrastructure\Framework\Factories;
 
-use SaleHub\Infrastructure\Persistence\UserRepository;
-use SaleHub\Infrastructure\ApiClients\ExternalEmailVerificationClient;
-use SaleHub\Infrastructure\ServiceImplementations\UserService;
-use SaleHub\Application\Service\UserAppService;
+use App\Infrastructure\Persistence\UserRepository;
+use App\Infrastructure\ApiClients\ExternalEmailVerificationClient;
+use App\Infrastructure\ServiceImplementations\UserService;
+use App\Application\Service\UserAppService;
 
 class ServiceFactory {
     public static function createUserAppService(string $tenantIdentifier): UserAppService {
@@ -535,7 +535,7 @@ php
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use SaleHub\Infrastructure\Framework\Router;
+use App\Infrastructure\Framework\Router;
 
 // Simulación: obtener tenant del header o subdominio
 $tenantIdentifier = $_SERVER['HTTP_X_TENANT'] ?? 'tenant1_db';

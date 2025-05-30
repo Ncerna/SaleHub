@@ -1,0 +1,14 @@
+# Ignorar dependencias de Composer
+/vendor/
+
+# Ignorar archivos temporales
+*.log
+*.cache
+
+# Ignorar archivos del entorno local
+.env
+.env.local
+
+# Ignorar configuraciones de IDE
+.idea/
+.vscode/

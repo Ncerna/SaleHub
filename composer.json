@@ -1,15 +1,7 @@
 {
-    "name": "cerna/salehub",
-    "autoload": {
-        "psr-4": {
-             "SaleHub\\": "src/SaleHub/"
-        }
-    },
-    "authors": [
-        {
-            "name": "FIIS",
-            "email": "nimerce1234@gmail.com"
-        }
-    ],
-    "require": {}
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
 }

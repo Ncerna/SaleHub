@@ -1,13 +1,13 @@
-lwp@lwp-ThinkPad-E15-Gen-2:~/Escritorio/salehub$ composer init
+lwp@lwp-ThinkPad-E15-Gen-2:~/Escritorio/App$ composer init
 composer clear-cache
 composer dump-autoload
 
 
 
-SaleHub/
+App/
 │
 ├── src/
-│   └── SaleHub/                          # Namespace principal del proyecto
+│   └── App/                          # Namespace principal del proyecto
 │       ├── Domain/                       # Capa de dominio (lógica de negocio pura)
 │       │   ├── Entity/                   # Entidades del dominio (ej. User.php, Order.php)
 │       │   ├── IRepository/              # Interfaces de repositorios (ej. IUserRepository.php)
@@ -47,10 +47,10 @@ SaleHub/
 
 
 ///////////////////Ejemplo/////////////////////////////
-SaleHub/
+App/
 │
 ├── src/
-│   └── SaleHub/
+│   └── App/
 │       ├── Domain/
 │       │   ├── Entity/
 │       │   │   └── User.php

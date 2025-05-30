@@ -1,7 +1,7 @@
 RewriteEngine On
 
-# Captura el subdominio (ejemplo: sports.salehub.test)
-RewriteCond %{HTTP_HOST} ^([^.]+)\.salehub\.test$ [NC]
+# Captura el subdominio (ejemplo: sports.App.test)
+RewriteCond %{HTTP_HOST} ^([^.]+)\.App\.test$ [NC]
 
 # Si la petición no es un archivo o directorio real
 RewriteCond %{REQUEST_FILENAME} !-f
