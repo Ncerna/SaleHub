@@ -1,2 +1,4 @@
-# SaleHub
-Arquitectura Hexagonal en Proyectos PHP
+# ARQUITECTURA HEXAGONAL EN PHP
+implementación de la arquitectura hexagonal en aplicaciones PHP orientadas a entornos multi-tenant, con el objetivo de mejorar la mantenibilidad, escalabilidad y desacoplamiento del software. Inspirada en los principios de la Arquitectura Limpia propuesta por Robert C. Martin (Uncle Bob), esta propuesta busca separar claramente las responsabilidades del sistema, favoreciendo una estructura donde el dominio central permanece independiente de los detalles de infraestructura y frameworks.
+
+Se aplican los principios SOLID como guía fundamental en el diseño de los componentes, promoviendo prácticas como la inversión de dependencias, la responsabilidad única y la extensión sin modificación, elementos clave para facilitar el crecimiento del sistema y su adaptación a nuevos requerimientos o inquilinos (tenants).
