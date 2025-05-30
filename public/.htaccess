@@ -1,8 +1,12 @@
 RewriteEngine On
 
-# Evitar reescribir archivos existentes
+# Captura el subdominio (ejemplo: sports.salehub.test)
+RewriteCond %{HTTP_HOST} ^([^.]+)\.salehub\.test$ [NC]
+
+# Si la petición no es un archivo o directorio real
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Redirigir todas las peticiones a index.php
-RewriteRule ^ index.php [QSA,L]
+# Redirige todo a index.php pasando el subdominio como parámetro GET
+RewriteRule ^(.*)$ index.php?subdomain=%1&url=$1 [L,QSA]
+

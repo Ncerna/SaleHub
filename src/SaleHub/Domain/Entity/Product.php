@@ -111,5 +111,15 @@ class Product {
     public function getName(): string {
         return $this->name;
     }
+   // private  // Asegúrate de declarar la propiedad
+
+public function getBarcode(): ?string {
+    return $this->barcode;
+}
+
+public function setBarcode(?string $barcode): void {
+    $this->barcode = $barcode;
+}
+
     // ... (otros getters)
 }

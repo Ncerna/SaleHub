@@ -1,57 +1,25 @@
 <?php
 namespace SaleHub\Infrastructure\Framework;
 
+class Router
+{
+    private $routes = [];
 
-use SaleHub\Infrastructure\Framework\Controller\UserController;
-use SaleHub\Infrastructure\Framework\Middleware\AuthMiddleware;
-
-class Router {
-    private UserController $userController;
-    private AuthMiddleware $authMiddleware;
-
-    public function __construct(string $tenantIdentifier) {
-        $this->userController = new UserController($tenantIdentifier);
-        $this->authMiddleware = new AuthMiddleware();
-    }
-
-     private array $routes = [];
-
-    public function addRoute(string $method, string $path, callable $handler): void {
+    public function addRoute(string $method, string $path, callable $handler): void
+    {
         $this->routes[$method][$path] = $handler;
     }
 
-    public function dispatch(): void {
+    public function dispatch(): void
+    {
         $method = $_SERVER['REQUEST_METHOD'];
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-        // Opción: quitar subdirectorio como /SaleHub/public si es necesario
-        $basePath = '/SaleHub/public';
-        $uri = str_replace($basePath, '', $uri);
-
-        if (isset($this->routes[$method][$uri])) {
-            $handler = $this->routes[$method][$uri];
-            call_user_func($handler);  // Aquí llama a createUser()
+        if (isset($this->routes[$method][$path])) {
+            call_user_func($this->routes[$method][$path]);
         } else {
             http_response_code(404);
-            echo json_encode(["status" => "error", "message" => "Ruta no encontrada"]);
+            echo "404 Not Found - Ruta no encontrada";
         }
-    }
-
-    public function handleRequest(): void {
-        $this->authMiddleware->handle(function () {
-            $uri = $_SERVER['REQUEST_URI'];
-            $method = $_SERVER['REQUEST_METHOD'];
-
-            if ($uri === '/SaleHub/public/register' && $method === 'POST') {
-                $data = json_decode(file_get_contents('php://input'), true);
-                $this->userController->register($data);
-            } elseif (preg_match('/\/user\/(.+)/', $uri, $matches) && $method === 'GET') {
-                $email = urldecode($matches[1]);
-                $this->userController->find($email);
-            } else {
-                http_response_code(404);
-                echo json_encode(['status' => 'error', 'message' => 'Ruta no encontrada']);
-            }
-        });
     }
 }

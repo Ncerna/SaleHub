@@ -1,20 +1,5 @@
 <?php
-/*namespace SaleHub\Infrastructure\Framework\Controller;
-
-class UserController
-{
-    public function createUser()
-    {
-        $tenant = defined('CURRENT_TENANT') ? CURRENT_TENANT : 'desconocido';
-
-        // Aquí procesas la petición y usas $tenant para lógica específica
-
-        echo json_encode(['message' => "Usuario creado para tenant $tenant"]);
-    }
-}*/
-
 namespace SaleHub\Infrastructure\Framework\Controller;
-
 use SaleHub\Application\UseCase\RegisterUserUseCase;
 use SaleHub\Application\UseCase\FindUserUseCase;
 use SaleHub\Infrastructure\Persistence\UserRepository;

@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Evita bucles infinitos
+RewriteCond %{REQUEST_URI} !^/public/
+
+# Redirige todo a la carpeta public
+RewriteRule ^(.*)$ public/$1 [L]
+
