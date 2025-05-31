@@ -4,6 +4,7 @@ use App\Infrastructure\Framework\Router;
 use App\Infrastructure\Framework\Controller\UserController;
 use App\Infrastructure\Framework\Controller\InvoiceController;
 use App\Infrastructure\Framework\Controller\SalesController;
+use GuzzleHttp\Psr7\ServerRequest;
 // index.php - API REST simple en PHP puro
 // Habilitar CORS para pruebas locales (opcional, pero recomendado)
 header("Access-Control-Allow-Origin: *");
@@ -29,6 +30,17 @@ $router->addRoute('GET', '/', function() use ($tenant) {
         'message' => "Bienvenido a la API REST del tenant: $tenant"
     ]);
 });
+
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+
+/*
+$request = ServerRequest::fromGlobals();
+
+$router = new Router();
+$router->handle($request);*/
+
 
 $router->addRoute('POST', '/sales/save', function() use ($controller, $tenant) {
     $controller->save($tenant);

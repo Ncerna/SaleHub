@@ -1,83 +1,89 @@
 <?php
 namespace App\Infrastructure\Framework\Controller;
 
-use App\Application\UseCase\CreateProductUseCase;
-use App\Application\UseCase\UpdateProductUseCase;
-use App\Application\UseCase\DeleteProductUseCase;
-use App\Application\UseCase\GetProductUseCase;
-use App\Application\UseCase\ListProductsUseCase;
-use App\Domain\Entity\Product;
-use App\Infrastructure\Framework\Adapters\JsonResponseAdapter;
+use Psr\Http\Message\ServerRequestInterface;
+use APP\Application\IUseCase\ProductUseCaseInterface;
+use App\Infrastructure\Framework\Adapters\ResponseAdapterInterface;
 
-class ProductController {
-    private CreateProductUseCase $createUseCase;
-    private UpdateProductUseCase $updateUseCase;
-    private DeleteProductUseCase $deleteUseCase;
-    private GetProductUseCase $getUseCase;
-    private ListProductsUseCase $listUseCase;
-    private JsonResponseAdapter $responseAdapter;
+final class ProductController
+{
+    private ProductUseCaseInterface $productUseCase;
+    private ResponseAdapterInterface $responseAdapter;
 
     public function __construct(
-        CreateProductUseCase $createUseCase,
-        UpdateProductUseCase $updateUseCase,
-        DeleteProductUseCase $deleteUseCase,
-        GetProductUseCase $getUseCase,
-        ListProductsUseCase $listUseCase
+        ProductUseCaseInterface $productUseCase,
+        ResponseAdapterInterface $responseAdapter
     ) {
-        $this->createUseCase = $createUseCase;
-        $this->updateUseCase = $updateUseCase;
-        $this->deleteUseCase = $deleteUseCase;
-        $this->getUseCase = $getUseCase;
-        $this->listUseCase = $listUseCase;
-        $this->responseAdapter = new JsonResponseAdapter();
+        $this->productUseCase = $productUseCase;
+        $this->responseAdapter = $responseAdapter;
     }
 
-    public function create(array $data): void {
+    public function create(ServerRequestInterface $request)
+    {
         try {
-            $product = $this->mapDataToProduct($data);
-            $this->createUseCase->execute($product);
-            $this->responseAdapter->sendSuccess("Producto creado correctamente.");
+            $data = (array) $request->getParsedBody();
+
+            // Aquí construimos el comando para crear producto
+            $command = new CreateProductCommand($data);
+
+            // Ejecutamos el caso de uso
+            $this->productUseCase->create($command);
+
+            return $this->responseAdapter->sendSuccess('Producto creado correctamente.');
         } catch (\Exception $e) {
-            $this->responseAdapter->sendError($e->getMessage());
+            return $this->responseAdapter->sendError('Error creando producto: ' . $e->getMessage());
         }
     }
 
-    // Métodos update, delete, get, list similares
+    public function get(ServerRequestInterface $request, string $id)
+    {
+        try {
+            $productData = $this->productUseCase->get($id);
 
-    private function mapDataToProduct(array $data): Product {
-        // Aquí deberías validar y mapear correctamente, este es un ejemplo simplificado
-        return new Product(
-            $data['id'],
-            $data['name'],
-            $data['code'],
-            $data['barcode'] ?? null,
-            $data['price'],
-            $data['description'] ?? null,
-            $data['stock'],
-            $data['minimum_stock'],
-            $data['id_concept'] ?? null,
-            $data['photo'] ?? null,
-            $data['categoryId'] ?? null,
-            $data['igvAffectationId'] ?? null,
-            $data['igvAffectCode'] ?? null,
-            $data['unitId'] ?? null,
-            $data['unit'] ?? null,
-            $data['unitCost'],
-            $data['unitPrice'],
-            $data['priceWithIgv'],
-            $data['priceWithoutIgv'],
-            $data['bulkPriceWithIgv'],
-            $data['bulkPriceWithoutIgv'],
-            $data['offerPriceWithIgv'],
-            $data['offerPriceWithoutIgv'],
-            $data['totalCost'],
-            $data['igvFactor'],
-            $data['igvRate'],
-            $data['companyId'] ?? null,
-            $data['branchId'] ?? null,
-            $data['warehouseId'] ?? null,
-            new \DateTime($data['createdAt'] ?? 'now'),
-            new \DateTime($data['updatedAt'] ?? 'now')
-        );
+            return $this->responseAdapter->sendSuccess('Producto obtenido.', $productData);
+        } catch (\Exception $e) {
+            return $this->responseAdapter->sendError('Error obteniendo producto: ' . $e->getMessage());
+        }
+    }
+
+    public function update(ServerRequestInterface $request, string $id)
+    {
+        try {
+            $data = (array) $request->getParsedBody();
+
+            $command = new UpdateProductCommand($id, $data);
+
+            $this->productUseCase->update($id, $command);
+
+            return $this->responseAdapter->sendSuccess('Producto actualizado correctamente.');
+        } catch (\Exception $e) {
+            return $this->responseAdapter->sendError('Error actualizando producto: ' . $e->getMessage());
+        }
+    }
+
+    public function delete(string $id)
+    {
+        try {
+            $this->productUseCase->delete($id);
+
+            return $this->responseAdapter->sendSuccess('Producto eliminado correctamente.');
+        } catch (\Exception $e) {
+            return $this->responseAdapter->sendError('Error eliminando producto: ' . $e->getMessage());
+        }
+    }
+
+    public function list(ServerRequestInterface $request)
+    {
+        try {
+            $queryParams = $request->getQueryParams();
+            $page = isset($queryParams['page']) ? (int)$queryParams['page'] : 1;
+            $size = isset($queryParams['size']) ? (int)$queryParams['size'] : 10;
+
+            $products = $this->productUseCase->list($page, $size);
+
+            return $this->responseAdapter->sendSuccess('Lista de productos obtenida.', $products);
+        } catch (\Exception $e) {
+            return $this->responseAdapter->sendError('Error listando productos: ' . $e->getMessage());
+        }
     }
 }

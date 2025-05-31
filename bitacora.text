@@ -17,7 +17,9 @@ App/
 │       ├── Application/                  # Capa de aplicación (casos de uso)
 │       │   ├── UseCase/                  # Casos de uso (ej. CreateOrderUseCase.php)
 │       │   ├── Service/                  # Servicios de aplicación (ej. OrderService.php)
-│       │   └── DTO/                      # Data Transfer Objects (ej. OrderDTO.php)
+│       │   └── DTO/
+|           └── IUseCase/  
+|           └── Command/                   # Data Transfer Objects (ej. OrderDTO.php)
 │       │
 │       └── Infrastructure/               # Capa de infraestructura (implementaciones técnicas)
 │           ├── Persistence/              # Implementación de repositorios (ej. UserRepository.php)
