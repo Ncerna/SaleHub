@@ -41,4 +41,13 @@ class ServiceFactory {
         // Crear y devolver controlador con inyección de dependencias
         return new ProductController($productUseCase, $responseAdapter);
     }
+    public static function createClientController(string $tenant): ClientController
+{
+    $clientRepository = new ClientRepository($tenant);
+    $clientUseCase = new ClientUseCase($clientRepository);
+    $responseAdapter = new JsonResponseAdapter();
+
+    return new ClientController($clientUseCase, $responseAdapter);
+}
+
 }
