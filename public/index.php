@@ -52,5 +52,31 @@ $router->addRoute('GET', '/sales/get', function() use ($controller, $tenant) {
     $controller->getById($tenant);
 });
 
+
+$clientController = ServiceFactory::createClientController($tenant);
+
+$router->addRoute('POST', '/clients/create', function($request) use ($clientController) {
+    $clientController->create($request);
+});
+
+$router->addRoute('GET', '/clients/list', function($request) use ($clientController) {
+    $clientController->list($request);
+});
+
+$router->addRoute('GET', '/clients/get', function($request) use ($clientController) {
+    $id = $request->getQueryParams()['id'] ?? '';
+    $clientController->get($request, $id);
+});
+
+$router->addRoute('PUT', '/clients/update', function($request) use ($clientController) {
+    $id = $request->getQueryParams()['id'] ?? '';
+    $clientController->update($request, $id);
+});
+
+$router->addRoute('DELETE', '/clients/delete', function($request) use ($clientController) {
+    $id = $request->getQueryParams()['id'] ?? '';
+    $clientController->delete($id);
+});
+
 $router->dispatch();
 
